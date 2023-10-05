@@ -122,8 +122,8 @@ in
     };
 
     port = lib.mkOption {
-      type = lib.types.port;
-      default = 5432;
+      type = lib.types.str;
+      default = "5432";
       description = ''
         The TCP port to accept connections.
       '';
@@ -305,7 +305,7 @@ in
                 };
                 pg_isreadyArgs = [
                   "-h $(readlink -f \"${config.socketDir}\")"
-                  "-p ${toString config.port}"
+                  "-p ${config.port}"
                   "-d template1"
                 ] ++ (lib.optional (config.superuser != null) "-U ${config.superuser}");
               in

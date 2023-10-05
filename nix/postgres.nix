@@ -99,8 +99,8 @@ in
     };
 
     port = lib.mkOption {
-      type = lib.types.port;
-      default = 5432;
+      type = lib.types.str;
+      default = "5432";
       description = ''
         The TCP port to accept connections.
       '';
@@ -143,7 +143,6 @@ in
         '';
         default = {
           listen_addresses = config.listen_addresses;
-          port = config.port;
           unix_socket_directories = config.dataDir;
           hba_file = "${config.hbaConfFile}";
         };
@@ -163,7 +162,6 @@ in
         '';
         default = {
           listen_addresses = config.listen_addresses;
-          port = config.port;
           unix_socket_directories = lib.mkDefault config.dataDir;
           hba_file = "${config.hbaConfFile}";
         };
@@ -383,12 +381,14 @@ in
                     set -x
                     PGDATA=$(readlink -f "${config.dataDir}")
                     export PGDATA
-                    postgres -k "$PGDATA"
+                    PGPORT=${config.port}
+                    export PGPORT
+                    postgres -k "$PGDATA" -p "$PGPORT"
                   '';
                 };
                 pg_isreadyArgs = [
                   "-h $(readlink -f ${config.dataDir})"
-                  "-p ${toString config.port}"
+                  "-p ${config.port}"
                   "-d template1"
                 ] ++ (lib.optional (config.superuser != null) "-U ${config.superuser}");
               in

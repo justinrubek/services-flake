@@ -178,7 +178,6 @@ in
         '';
         default = {
           listen_addresses = config.listen_addresses;
-          port = config.port;
           unix_socket_directories = config.socketDir;
           hba_file = "${config.hbaConfFile}";
         };
@@ -198,7 +197,6 @@ in
         '';
         default = {
           listen_addresses = config.listen_addresses;
-          port = config.port;
           unix_socket_directories = lib.mkDefault config.socketDir;
           hba_file = "${config.hbaConfFile}";
         };

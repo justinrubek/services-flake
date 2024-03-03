@@ -72,15 +72,38 @@ let
 
   initdbArgs = let
     getDirEnv = { envOption, dirOption }:
-      if config.env[envOption] != null then
-        [ "-D" "\"${config.env[envOption]}\"" ]
+      if envOption != null then
+        [ "-D" "\"${envOption}\"" ]
       else
         [ "-D" config.dataDir ];
     dataDir = getDirEnv { envOption = config.dataDirEnv; dirOption = "dataDir"; };
   in
     config.initdbArgs
     ++ (lib.optionals (config.superuser != null) [ "-U" config.superuser ])
-    ++ [ "-D" config.dataDir ];
+    ++ (dataDir);
+
+    getDirValue = { envOption, dirOption }:
+      if envOption != null then
+        envOption
+      else
+        dirOption;
+
+    # if envOption is set, then pass the value as an environment variable name
+    # if using dirOption then treat it as a path and do a $(readlink -f) on it
+    getDirectoryEnv = { envOption, dirOption }: if envOption != null then
+      "${envOption}"
+    else
+      "$(readlink -f \"${dirOption}\")";
+
+    # use `"${config.dataDir}"` if dataDirEnv is not set, otherwise "\$(${dataDirEnv})" (fix this if it's wrong)
+    # dataDirEnv is the name of the environment variable that contains the data directory and we will use its value to set PGDATA
+    pgData = if config.dataDirEnv != null then
+      "${config.dataDirEnv}"
+      else
+        "${config.dataDir}";
+
+    socketDir = getDirValue { envOption = config.socketDirEnv; dirOption = config.socketDir; };
+    socketDirReadlink = getDirectoryEnv { envOption = config.socketDirEnv; dirOption = config.socketDir; };
 in
 (pkgs.writeShellApplication {
   name = "setup-postgres";
@@ -88,7 +111,7 @@ in
   text = ''
     set -euo pipefail
     # Setup postgres ENVs
-    export PGDATA="${config.dataDir}"
+    export PGDATA="${pgData}"
     export PGPORT="${config.port}"
     POSTGRES_RUN_INITIAL_SCRIPT="false"
 
@@ -105,16 +128,16 @@ in
     echo "Setting up postgresql.conf"
     cp ${configFile} "$PGDATA/postgresql.conf"
     # Create socketDir if it doesn't exist
-    if [ ! -d "${config.socketDir}" ]; then
+    if [ ! -d "${socketDir}" ]; then
       echo "Creating socket directory"
-      mkdir -p "${config.socketDir}"
+      mkdir -p "${socketDir}"
     fi
 
     if [[ "$POSTGRES_RUN_INITIAL_SCRIPT" = "true" ]]; then
       echo
       echo "PostgreSQL is setting up the initial database."
       echo
-      PGHOST=$(mktemp -d "$(readlink -f "${config.socketDir}")/pg-init-XXXXXX")
+      PGHOST=$(mktemp -d "${socketDirReadlink}/pg-init-XXXXXX")
       export PGHOST
 
       function remove_tmp_pg_init_sock_dir() {

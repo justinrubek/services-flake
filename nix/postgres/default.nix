@@ -50,10 +50,22 @@ in
       description = "The DB data directory";
     };
 
+    dataDirEnv = lib.mkOption {
+      type = lib.types.str;
+      default = "PGDATA";
+      description = "The environment variable to set the data directory";
+    };
+
     socketDir = lib.mkOption {
       type = lib.types.str;
       default = config.dataDir;
       description = "The DB socket directory";
+    };
+
+    socketDirEnv = lib.mkOption {
+      type = lib.types.str;
+      default = "PGSOCKETDIR";
+      description = "The environment variable to set the socket directory";
     };
 
     hbaConf =
@@ -292,13 +304,20 @@ in
             # DB process
             ${name} =
               let
+                # if envOption is set, then pass the value as an environment variable name
+                # if using dirOption then treat it as a path and do a $(readlink -f) on it
+                getDirectoryEnv = { envOption, dirOption }: if envOption != null then
+                  "${envOption}"
+                else
+                  "$(readlink -f \"${dirOption}\")";
+
                 startScript = pkgs.writeShellApplication {
                   name = "start-postgres";
                   runtimeInputs = [ config.package pkgs.coreutils ];
                   text = ''
                     set -euo pipefail
-                    PGDATA=$(readlink -f "${config.dataDir}")
-                    PGSOCKETDIR=$(readlink -f "${config.socketDir}")
+                    PGDATA=${getDirectoryEnv { envOption = config.dataDirEnv; dirOption = config.dataDir; }}
+                    PGSOCKETDIR=${getDirectoryEnv { envOption = config.socketDirEnv; dirOption = config.socketDir; }}
                     export PGDATA
                     postgres -k "$PGSOCKETDIR"
                   '';

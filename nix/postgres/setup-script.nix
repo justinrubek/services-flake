@@ -82,7 +82,7 @@ in
     set -euo pipefail
     # Setup postgres ENVs
     export PGDATA="${config.dataDir}"
-    export PGPORT="${toString config.port}"
+    export PGPORT="${config.port}"
     POSTGRES_RUN_INITIAL_SCRIPT="false"
 
 

@@ -70,7 +70,14 @@ let
   configFile = pkgs.writeText "postgresql.conf" (lib.concatStringsSep "\n"
     (lib.mapAttrsToList (n: v: "${n} = ${toStr v}") (config.defaultSettings // config.settings)));
 
-  initdbArgs =
+  initdbArgs = let
+    getDirEnv = { envOption, dirOption }:
+      if config.env[envOption] != null then
+        [ "-D" "\"${config.env[envOption]}\"" ]
+      else
+        [ "-D" config.dataDir ];
+    dataDir = getDirEnv { envOption = config.dataDirEnv; dirOption = "dataDir"; };
+  in
     config.initdbArgs
     ++ (lib.optionals (config.superuser != null) [ "-U" config.superuser ])
     ++ [ "-D" config.dataDir ];

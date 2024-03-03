@@ -323,7 +323,7 @@ in
                   '';
                 };
                 pg_isreadyArgs = [
-                  "-h $(readlink -f \"${config.socketDir}\")"
+                  "-h ${getDirectoryEnv { envOption = config.socketDirEnv; dirOption = config.socketDir; }}"
                   "-p ${config.port}"
                   "-d template1"
                 ] ++ (lib.optional (config.superuser != null) "-U ${config.superuser}");

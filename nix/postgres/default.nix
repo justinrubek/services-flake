@@ -319,7 +319,7 @@ in
                     PGDATA=${getDirectoryEnv { envOption = config.dataDirEnv; dirOption = config.dataDir; }}
                     PGSOCKETDIR=${getDirectoryEnv { envOption = config.socketDirEnv; dirOption = config.socketDir; }}
                     export PGDATA
-                    postgres -k "$PGSOCKETDIR"
+                    postgres -k "$PGSOCKETDIR" -p "${config.port}"
                   '';
                 };
                 pg_isreadyArgs = [
